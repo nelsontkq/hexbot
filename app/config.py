@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     twitter_client_secret:str
     twitter_access_token:str
     twitter_access_token_secret: str
+    db_connection_string: str
+    default_user: str
     
     model_config = SettingsConfigDict(env_file=".env")
 
+
+settings = Settings()

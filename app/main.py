@@ -1,11 +1,15 @@
 from functools import lru_cache
 from discord import HTTPException
+from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Depends, FastAPI, Request, Response
 from fastapi.responses import RedirectResponse
-from app import config, bot
+from app import bot
+from app.config import settings
 import xml.etree.ElementTree as ET
 import tweepy
+
+from app.db import init_db
 
 app = FastAPI()
 
@@ -19,16 +23,18 @@ app.add_middleware(
     allow_headers=["*"],
 ) 
 
-@lru_cache
-def get_settings():
-    return config.Settings()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+    
 
 @app.get("/")
 async def root():
     return ":)"
 
 @app.get("/twitter")
-async def twitter(settings: config.Settings = Depends(get_settings)):
+async def twitter():
     auth = tweepy.OAuth1UserHandler(
         settings.twitter_api_key, settings.twitter_api_key_secret
     )
@@ -41,7 +47,7 @@ async def twitter(settings: config.Settings = Depends(get_settings)):
         print({"error": str(e)})
 
 @app.get("/twitter/callback")
-async def twitter_oauth(oauth_token: str, oauth_verifier: str, settings: config.Settings = Depends(get_settings)):
+async def twitter_oauth(oauth_token: str, oauth_verifier: str):
     auth = tweepy.OAuth1UserHandler(
         settings.twitter_api_key, settings.twitter_api_key_secret
     )
@@ -54,7 +60,7 @@ async def twitter_oauth(oauth_token: str, oauth_verifier: str, settings: config.
         print({"error": str(e)})
 
 @app.post("/youtube/hook")
-async def youtube_hook(request: Request, settings: config.Settings = Depends(get_settings)):
+async def youtube_hook(request: Request):
     # Extract the content type of the request
     content_type = request.headers.get('content-type')
 
