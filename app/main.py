@@ -2,7 +2,7 @@ from functools import lru_cache
 from typing import Annotated, Union
 from discord import HTTPException
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Request, Response
 from . import config, bot
 import xml.etree.ElementTree as ET
 
@@ -28,7 +28,7 @@ async def youtube_hook(request: Request, settings: config.Settings = Depends(get
         hub_challenge = form_data.get('hub.challenge')
 
         if hub_mode == 'subscribe' and hub_challenge:
-            return hub_challenge
+            return Response(content=hub_challenge, media_type='text/plain')
 
     # Handling YouTube notification
     else:
