@@ -41,14 +41,14 @@ async def twitter(settings: config.Settings = Depends(get_settings)):
         print({"error": str(e)})
 
 @app.get("/twitter/callback")
-async def twitter_oauth(token: str, verifier: str, settings: config.Settings = Depends(get_settings)):
+async def twitter_oauth(oauth_token: str, oauth_verifier: str, settings: config.Settings = Depends(get_settings)):
     auth = tweepy.OAuth1UserHandler(
         settings.twitter_api_key, settings.twitter_api_key_secret
     )
-    auth.request_token = {'oauth_token': token, 'oauth_token_secret': verifier}
+    auth.request_token = {'oauth_token': oauth_token, 'oauth_token_secret': oauth_verifier}
     try:
         # Get the access token and access token secret
-        auth.access_token, auth.access_token_secret = auth.get_access_token(verifier)
+        auth.access_token, auth.access_token_secret = auth.get_access_token(oauth_verifier)
         return {"access_token": auth.access_token, "access_token_secret": auth.access_token_secret}
     except tweepy.TweepyException as e:
         print({"error": str(e)})
