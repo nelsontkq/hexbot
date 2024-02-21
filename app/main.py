@@ -3,7 +3,7 @@ from typing import Annotated, Union
 from discord import HTTPException
 
 from fastapi import Depends, FastAPI, Request, Response
-from . import config, bot
+from app import config, bot
 import xml.etree.ElementTree as ET
 import tweepy
 
