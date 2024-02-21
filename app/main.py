@@ -5,7 +5,7 @@ from discord import HTTPException
 from fastapi import Depends, FastAPI, Request, Response
 from . import config, bot
 import xml.etree.ElementTree as ET
-
+import tweepy
 
 app = FastAPI()
 
@@ -14,6 +14,31 @@ app = FastAPI()
 def get_settings():
     return config.Settings()
 
+
+@app.get("/twitter")
+async def twitter(settings: config.Settings = Depends(get_settings)):
+    auth = tweepy.OAuth1UserHandler(
+        settings.twitter_api_key, settings.twitter_api_key_secret
+    )
+    try:
+        # Get the authorization URL for the user to complete the OAuth flow
+        redirect_url = auth.get_authorization_url()
+        return {"url": redirect_url}
+    except tweepy.TweepyException as e:
+        return {"error": str(e)}
+
+@app.get("/twitter/callback")
+async def twitter_oauth(token: str, verifier: str, settings: config.Settings = Depends(get_settings)):
+    auth = tweepy.OAuth1UserHandler(
+        settings.twitter_api_key, settings.twitter_api_key_secret
+    )
+    auth.request_token = {'oauth_token': token, 'oauth_token_secret': verifier}
+    try:
+        # Get the access token and access token secret
+        auth.access_token, auth.access_token_secret = auth.get_access_token(verifier)
+        return {"access_token": auth.access_token, "access_token_secret": auth.access_token_secret}
+    except tweepy.TweepyException as e:
+        return {"error": str(e)}
 
 @app.post("/youtube/hook")
 async def youtube_hook(request: Request, settings: config.Settings = Depends(get_settings)):
@@ -42,7 +67,7 @@ async def youtube_hook(request: Request, settings: config.Settings = Depends(get
                 title = entry.find('{http://www.w3.org/2005/Atom}title').text
                 link = entry.find('{http://www.w3.org/2005/Atom}link').attrib['href']
 
-                await bot.process_youtube(title, link)
+                await bot.process_youtube(title, link, settings)
 
         except ET.ParseError:
             raise HTTPException(status_code=400, detail="Invalid XML format")
