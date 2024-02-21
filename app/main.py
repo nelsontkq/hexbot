@@ -1,19 +1,31 @@
 from functools import lru_cache
-from typing import Annotated, Union
 from discord import HTTPException
-
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Depends, FastAPI, Request, Response
+from fastapi.responses import RedirectResponse
 from app import config, bot
 import xml.etree.ElementTree as ET
 import tweepy
 
 app = FastAPI()
 
+origins = ['*']
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+) 
 
 @lru_cache
 def get_settings():
     return config.Settings()
 
+@app.get("/")
+async def root():
+    return ":)"
 
 @app.get("/twitter")
 async def twitter(settings: config.Settings = Depends(get_settings)):
@@ -23,9 +35,10 @@ async def twitter(settings: config.Settings = Depends(get_settings)):
     try:
         # Get the authorization URL for the user to complete the OAuth flow
         redirect_url = auth.get_authorization_url()
-        return {"url": redirect_url}
+        
+        return RedirectResponse(url=redirect_url)
     except tweepy.TweepyException as e:
-        return {"error": str(e)}
+        print({"error": str(e)})
 
 @app.get("/twitter/callback")
 async def twitter_oauth(token: str, verifier: str, settings: config.Settings = Depends(get_settings)):
@@ -38,7 +51,7 @@ async def twitter_oauth(token: str, verifier: str, settings: config.Settings = D
         auth.access_token, auth.access_token_secret = auth.get_access_token(verifier)
         return {"access_token": auth.access_token, "access_token_secret": auth.access_token_secret}
     except tweepy.TweepyException as e:
-        return {"error": str(e)}
+        print({"error": str(e)})
 
 @app.post("/youtube/hook")
 async def youtube_hook(request: Request, settings: config.Settings = Depends(get_settings)):
