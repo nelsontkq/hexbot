@@ -100,7 +100,7 @@ async def youtube_hook(
 ):
     if hub_verify_token != settings.youtube_verify_token:
         print(f"Invalid verify token!: {hub_verify_token}")
-        raise HTTPException(status_code=403)
+        return Response(content="Invalid verify token", status_code=403)
     if hub_mode == "subscribe" and hub_challenge:
         print(f"Subscribed to Youtube with lease_seconds: {lease_seconds}")
         update_lease(session, settings.default_user, int(lease_seconds), hub_topic)

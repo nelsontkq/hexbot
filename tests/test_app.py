@@ -9,7 +9,6 @@ from app.main import app  # Import your FastAPI app
 
 @pytest.fixture(scope="module")
 def client():
-    settings.db_connection_string = "sqlite:///./test.db"
     SQLModel.metadata.create_all(engine)
 
     with TestClient(app) as client:
