@@ -36,7 +36,7 @@ def init_db() -> None:
             select(TwitterUser).where(TwitterUser.user == settings.default_user)
         ).first()
         if not user:
-            session.add(TwitterUser(user=settings.default_user))
+            session.add(TwitterUser(user=settings.default_user, hub_topic=settings.hub_topic))
             session.commit()
 
 
