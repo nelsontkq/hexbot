@@ -1,3 +1,4 @@
+import datetime
 from functools import lru_cache
 from discord import HTTPException
 from fastapi.concurrency import asynccontextmanager
@@ -92,9 +93,16 @@ async def youtube_hook(request: Request):
             # Extract data from the XML. Here's an example to get the video title and link.
             for entry in root.findall('{http://www.w3.org/2005/Atom}entry'):
                 title = entry.find('{http://www.w3.org/2005/Atom}title').text
+                published = entry.find('{http://www.w3.org/2005/Atom}published').text
                 link = entry.find('{http://www.w3.org/2005/Atom}link').attrib['href']
                 
-                await bot.process_youtube(title, link, settings, get_user(settings.default_user))
+                # if published greater than 12 hours ago, ignore
+                published_iso_date = datetime.datetime.fromisoformat(published)
+                if (datetime.datetime.now() - published_iso_date).total_seconds() > 43200:
+                    print("Ignoring video published more than 12 hours ago")
+                    continue
+                
+                await bot.process_youtube(title, link, published, settings, get_user(settings.default_user))
 
         except ET.ParseError:
             raise HTTPException(status_code=400, detail="Invalid XML format")
