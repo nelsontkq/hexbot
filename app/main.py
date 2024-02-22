@@ -97,8 +97,8 @@ async def youtube_hook(request: Request):
                 link = entry.find('{http://www.w3.org/2005/Atom}link').attrib['href']
                 
                 # if published greater than 12 hours ago, ignore
-                published_iso_date = datetime.datetime.fromisoformat(published)
-                if (datetime.datetime.now() - published_iso_date).total_seconds() > 43200:
+                published_iso_date = datetime.datetime.fromisoformat(published).replace(tzinfo=None)
+                if (datetime.datetime.utcnow() - published_iso_date).total_seconds() > 43200:
                     print("Ignoring video published more than 12 hours ago")
                     continue
                 
