@@ -5,7 +5,9 @@ class Settings(BaseSettings):
     # bot_token: str
     # discord_channel_id: int
     # youtube_developer_key: str
+    base_url: str
     youtube_channel_id: str
+    youtube_verify_token: str
     twitter_bearer_token: str
     twitter_api_key:str
     twitter_api_key_secret:str

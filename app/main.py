@@ -11,7 +11,8 @@ from app.config import settings
 import xml.etree.ElementTree as ET
 import tweepy
 
-from app.db import get_user, init_db, create_update_user
+from app.db import get_user, init_db, create_update_user, update_lease
+from app.scheduler import init_scheduler
 
 app = FastAPI()
 
@@ -28,6 +29,7 @@ app.add_middleware(
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    init_scheduler()
     yield
     
 # templates = Jinja2Templates(directory="templates")
@@ -69,8 +71,13 @@ async def twitter_oauth(oauth_token: str, oauth_verifier: str):
 # async def update_template():
 #     return Response(content="<form method=\"post\"><input type=\"text\" name=\"template\" placeholder=\"Template\"><input type=\"submit\" value=\"Submit\"></form>", media_type='text/html')
 @app.get("/youtube/hook")
-async def youtube_hook(hub_challenge: str = Query(..., alias="hub.challenge"), hub_mode: str = Query(..., alias="hub.mode")):
+async def youtube_hook(hub_challenge: str = Query(..., alias="hub.challenge"), hub_verify_token: str = Query(..., alias="hub.verify_token"), lease_seconds: str=Query(..., alias="hub.lease_seconds"), hub_mode: str = Query(..., alias="hub.mode")):
+    if hub_verify_token != settings.youtube_verify_token:
+        print(f"Invalid verify token!: {hub_verify_token}")
+        raise HTTPException(status_code=403)
     if hub_mode == 'subscribe' and hub_challenge:
+        print(f"Subscribed to Youtube with lease_seconds: {lease_seconds}")
+        update_lease(settings.default_user, int(lease_seconds))
         return Response(content=hub_challenge, media_type='text/plain')
 
 @app.post("/youtube/hook")

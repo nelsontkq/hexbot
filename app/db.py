@@ -1,4 +1,5 @@
-from typing import Optional, Tuple
+import datetime
+from typing import List, Optional, Tuple
 
 from sqlmodel import Field, SQLModel, Session, create_engine, select
 
@@ -10,8 +11,9 @@ class TwitterUser(SQLModel, table=True):
     user: str
     access_token: Optional[str]
     access_token_secret: Optional[str]
+    lease_date: Optional[datetime.datetime]
+    hub_topic: Optional[str]
     # tweet_template: Optional[str]
-# Properties to receive via API on creation
 
 class YoutubeUpload(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -66,3 +68,23 @@ def get_create_post(link: str) -> Tuple[YoutubeUpload, bool]:
                 select(YoutubeUpload).where(YoutubeUpload.link == link)
             ).first()
         return post, new
+
+def update_lease(user_name: str, lease_seconds: int, hub_topic: str):
+    with Session(engine) as session:
+        user = session.exec(
+            select(TwitterUser).where(TwitterUser.user == user_name)
+        ).first()
+        if user:
+            user.lease_date = datetime.datetime.now() + datetime.timedelta(seconds=lease_seconds)
+            user.hub_topic = hub_topic
+            session.commit()
+        else:
+            print(f"User {user_name} not found")
+
+def get_users_to_resub() -> List[TwitterUser]:
+    with Session(engine) as session:
+        users = session.exec(
+            select(TwitterUser).where(TwitterUser.lease_date < datetime.datetime.now() + datetime.timedelta(days=2))
+        ).all()
+        return users
+        
