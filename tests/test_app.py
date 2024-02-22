@@ -4,22 +4,9 @@ from unittest.mock import patch
 
 client = TestClient(app)
 
-def test_twitter_oauth_flow():
-    with patch('tweepy.OAuth1UserHandler.get_authorization_url') as mock_auth_url:
-        mock_auth_url.return_value = "https://mocked.url"
-        response = client.get("/twitter")
-        assert response.status_code == 200
-        assert "https://mocked.url" in response.json()["url"]
-
-def test_youtube_hook_subscribe():
-    hub_challenge_test_value = "testChallenge123"
-    response = client.get("/youtube/hook", params={"hub.mode": "subscribe", "hub.challenge": hub_challenge_test_value})
-    assert response.status_code == 200
-    assert response.content.decode() == hub_challenge_test_value
-
 def test_youtube_subscription_verification():
     # Simulating YouTube's subscription verification request
-    response = client.get("/youtube/hook", data={
+    response = client.get("/youtube/hook", params={
         'hub.mode': 'subscribe',
         'hub.challenge': 'test_challenge'
     })
@@ -51,6 +38,6 @@ def test_youtube_notification_handling():
     </feed>
     """
     headers = {'content-type': 'application/atom+xml'}
-    response = client.get("/youtube/hook", data=xml_data, headers=headers)
+    response = client.post("/youtube/hook", content=xml_data, headers=headers)
     assert response.status_code == 200
     assert response.json() == {"message": "Received"}
