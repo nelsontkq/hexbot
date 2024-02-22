@@ -1,3 +1,4 @@
+import asyncio
 from fastapi.testclient import TestClient
 from unittest.mock import MagicMock, patch
 
@@ -70,3 +71,28 @@ def test_youtube_notification_handling(client: TestClient):
     response = client.post("/youtube/hook", content=xml_data, headers=headers)
     assert response.status_code == 200
     assert response.json() == {"message": "Received"}
+
+
+@patch('app.main.get_user')
+@patch('aiohttp.ClientSession.post')
+def test_youtube_resubscribe_user_found(mock_post, mock_get_user, client: TestClient):
+        # Mock the response from YouTube
+    mock_resp = MagicMock()
+    mock_resp.status = 200  # Set to the expected status code
+    mock_resp.text = MagicMock(return_value=asyncio.Future())
+    mock_resp.text.return_value.set_result('Success')  # Set the expected response text
+    mock_post.return_value.__aenter__.return_value = mock_resp
+    mock_user = MagicMock()
+    mock_user.hub_topic = 'test_topic'
+    mock_get_user.return_value = mock_user
+
+    # Test
+    response = client.post("/youtube/resubscribe")
+    assert response.status_code == 200
+    assert response.json() == {"message": "Resubscribed"}
+
+
+def test_youtube_resubscribe_user_not_found(client: TestClient):
+    response = client.post("/youtube/resubscribe")
+    assert response.status_code == 200  # or 404 if you decide to change the response for not found user
+    assert response.json() == {"message": "User not found"}
