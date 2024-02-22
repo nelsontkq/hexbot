@@ -9,7 +9,7 @@ from app.config import settings
 import xml.etree.ElementTree as ET
 import tweepy
 
-from app.db import get_user, init_db, update_user
+from app.db import get_user, init_db, create_update_user
 
 app = FastAPI()
 
@@ -56,7 +56,7 @@ async def twitter_oauth(oauth_token: str, oauth_verifier: str):
         # Get the access token and access token secret
         auth.access_token, auth.access_token_secret = auth.get_access_token(oauth_verifier)
         
-        update_user(settings.default_user, auth.access_token, auth.access_token_secret)
+        create_update_user(settings.default_user, auth.access_token, auth.access_token_secret)
         return "Success! You can now close this tab."
     except tweepy.TweepyException as e:
         print({"error": str(e)})

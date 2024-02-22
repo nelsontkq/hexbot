@@ -26,14 +26,17 @@ def init_db() -> None:
             session.add(TwitterUser(user=settings.default_user))
             session.commit()
 
-def update_user(user_name: str, access_token: str, access_token_secret: str) -> None:
+def create_update_user(user_name: str, access_token: str, access_token_secret: str) -> None:
     print(f"Updating user {user_name}")
     with Session(engine) as session:
         user = session.exec(
             select(TwitterUser).where(TwitterUser.user == user_name)
         ).first()
-        user.access_token = access_token
-        user.access_token_secret = access_token_secret
+        if not user:
+            session.add(TwitterUser(user=user_name, access_token=access_token, access_token_secret=access_token_secret))
+        else:
+            user.access_token = access_token
+            user.access_token_secret = access_token_secret
         session.commit()
     print(f"User {user_name} updated")
 
