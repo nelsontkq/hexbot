@@ -1,5 +1,6 @@
 
 
+from pytest import Session
 from app.config import Settings
 import tweepy
 
@@ -16,10 +17,10 @@ def get_twitter_client(config: Settings, user: TwitterUser) -> tweepy.Client:
     return api
 
 
-async def process_youtube(title: str, link: str, config: Settings, user: TwitterUser):
+async def process_youtube(session: Session, title: str, link: str, config: Settings, user: TwitterUser):
     # Initialize Twitter client
     api = get_twitter_client(config, user)
-    post, new_post = get_create_post(link)
+    post, new_post = get_create_post(session, link)
     if not new_post:
         print("Tweet already posted.")
         return

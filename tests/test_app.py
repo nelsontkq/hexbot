@@ -1,19 +1,49 @@
 from fastapi.testclient import TestClient
+from unittest.mock import MagicMock, patch
+
+import pytest
+from sqlmodel import SQLModel
+from app.config import settings
+from app.db import engine
 from app.main import app  # Import your FastAPI app
-from unittest.mock import patch
 
-client = TestClient(app)
+@pytest.fixture(scope="module")
+def client():
+    settings.db_connection_string = "sqlite:///./test.db"
+    SQLModel.metadata.create_all(engine)
 
-def test_youtube_subscription_verification():
+    with TestClient(app) as client:
+        yield client
+
+    # Teardown: Drop tables
+    SQLModel.metadata.drop_all(engine)
+        
+        
+
+def test_youtube_invalid_verify_token(client: TestClient):
     # Simulating YouTube's subscription verification request
     response = client.get("/youtube/hook", params={
         'hub.mode': 'subscribe',
-        'hub.challenge': 'test_challenge'
+        'hub.challenge': 'test_challenge',
+        'hub.verify_token': 'test_token',
+        'hub.lease_seconds': '864000',
+        'hub.topic': 'test_topic',
+    })
+    assert response.status_code == 403
+
+@patch('app.config.settings.youtube_verify_token', 'test_token')
+def test_youtube_valid_verify_token(client: TestClient):
+    response = client.get("/youtube/hook", params={
+        'hub.mode': 'subscribe',
+        'hub.challenge': 'test_challenge',
+        'hub.verify_token': 'test_token',
+        'hub.lease_seconds': '864000',
+        'hub.topic': 'test_topic',
     })
     assert response.status_code == 200
-    assert response.content == b'test_challenge'
+    assert response.text == 'test_challenge'
 
-def test_youtube_notification_handling():
+def test_youtube_notification_handling(client: TestClient):
     # Simulating a YouTube notification
     xml_data = """
     <feed xmlns:yt="http://www.youtube.com/xml/schemas/2015"
