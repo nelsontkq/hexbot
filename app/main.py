@@ -3,7 +3,7 @@ from functools import lru_cache
 from discord import HTTPException
 from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import Depends, FastAPI, Request, Response
+from fastapi import Depends, FastAPI, Query, Request, Response
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from app import bot
@@ -69,45 +69,31 @@ async def twitter_oauth(oauth_token: str, oauth_verifier: str):
 # async def update_template():
 #     return Response(content="<form method=\"post\"><input type=\"text\" name=\"template\" placeholder=\"Template\"><input type=\"submit\" value=\"Submit\"></form>", media_type='text/html')
 @app.get("/youtube/hook")
-async def youtube_hook(request: Request):
-    # Extract the content type of the request
-    content_type = request.headers.get('content-type')
+async def youtube_hook(request: Request, hub_challenge: str = Query(..., alias="hub.challenge"), hub_mode: str = Query(..., alias="hub.mode")):
+    if hub_mode == 'subscribe' and hub_challenge:
+        return Response(content=hub_challenge, media_type='text/plain')
 
-    # YouTube sends a verification request with 'hub.challenge' parameter when you first set up the webhook
-    # This block handles the verification of the subscription
-    if 'application/x-www-form-urlencoded' in content_type:
-        form_data = await request.form()
-        hub_mode = form_data.get('hub.mode')
-        hub_challenge = form_data.get('hub.challenge')
-        print(form_data)
-        if hub_mode == 'subscribe' and hub_challenge:
-            return Response(content=hub_challenge, media_type='text/plain')
+    body = await request.body()
+    try:
+        root = ET.fromstring(body)
 
-    # Handling YouTube notification
-    else:
-        body = await request.body()
-        try:
-            # Parse the XML data
-            root = ET.fromstring(body)
+        for entry in root.findall('{http://www.w3.org/2005/Atom}entry'):
+            title = entry.find('{http://www.w3.org/2005/Atom}title').text
+            published = entry.find('{http://www.w3.org/2005/Atom}published').text
+            link = entry.find('{http://www.w3.org/2005/Atom}link').attrib['href']
+            
+            # if published greater than 12 hours ago, ignore
+            published_iso_date = datetime.datetime.fromisoformat(published).replace(tzinfo=None)
+            if (datetime.datetime.utcnow() - published_iso_date).total_seconds() > 43200:
+                print("Ignoring video published more than 12 hours ago")
+                continue
+            
+            await bot.process_youtube(title, link, published, settings, get_user(settings.default_user))
 
-            # Extract data from the XML. Here's an example to get the video title and link.
-            for entry in root.findall('{http://www.w3.org/2005/Atom}entry'):
-                title = entry.find('{http://www.w3.org/2005/Atom}title').text
-                published = entry.find('{http://www.w3.org/2005/Atom}published').text
-                link = entry.find('{http://www.w3.org/2005/Atom}link').attrib['href']
-                
-                # if published greater than 12 hours ago, ignore
-                published_iso_date = datetime.datetime.fromisoformat(published).replace(tzinfo=None)
-                if (datetime.datetime.utcnow() - published_iso_date).total_seconds() > 43200:
-                    print("Ignoring video published more than 12 hours ago")
-                    continue
-                
-                await bot.process_youtube(title, link, published, settings, get_user(settings.default_user))
-
-        except ET.ParseError:
-            raise HTTPException(status_code=400, detail="Invalid XML format")
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+    except ET.ParseError:
+        raise HTTPException(status_code=400, detail="Invalid XML format")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
     return {"message": "Received"}
