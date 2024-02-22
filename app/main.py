@@ -9,7 +9,7 @@ from app.config import settings
 import xml.etree.ElementTree as ET
 import tweepy
 
-from app.db import init_db
+from app.db import get_user, init_db, update_user
 
 app = FastAPI()
 
@@ -55,7 +55,8 @@ async def twitter_oauth(oauth_token: str, oauth_verifier: str):
     try:
         # Get the access token and access token secret
         auth.access_token, auth.access_token_secret = auth.get_access_token(oauth_verifier)
-        return {"access_token": auth.access_token, "access_token_secret": auth.access_token_secret}
+        
+        update_user(settings.default_user, auth.access_token, auth.access_token_secret)        
     except tweepy.TweepyException as e:
         print({"error": str(e)})
 
@@ -86,7 +87,7 @@ async def youtube_hook(request: Request):
                 title = entry.find('{http://www.w3.org/2005/Atom}title').text
                 link = entry.find('{http://www.w3.org/2005/Atom}link').attrib['href']
 
-                await bot.process_youtube(title, link, settings)
+                await bot.process_youtube(title, link, settings, get_user(settings.default_user))
 
         except ET.ParseError:
             raise HTTPException(status_code=400, detail="Invalid XML format")

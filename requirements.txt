@@ -32,6 +32,7 @@ MarkupSafe==2.1.5
 multidict==6.0.5
 orjson==3.9.14
 protobuf==4.25.3
+psycopg2-binary=2.9.9
 pyasn1==0.5.1
 pyasn1-modules==0.3.0
 pydantic==2.6.1
