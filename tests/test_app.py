@@ -11,9 +11,15 @@ def test_twitter_oauth_flow():
         assert response.status_code == 200
         assert "https://mocked.url" in response.json()["url"]
 
+def test_youtube_hook_subscribe():
+    hub_challenge_test_value = "testChallenge123"
+    response = client.get("/youtube/hook", params={"hub.mode": "subscribe", "hub.challenge": hub_challenge_test_value})
+    assert response.status_code == 200
+    assert response.content.decode() == hub_challenge_test_value
+
 def test_youtube_subscription_verification():
     # Simulating YouTube's subscription verification request
-    response = client.post("/youtube/hook", data={
+    response = client.get("/youtube/hook", data={
         'hub.mode': 'subscribe',
         'hub.challenge': 'test_challenge'
     })
@@ -45,6 +51,6 @@ def test_youtube_notification_handling():
     </feed>
     """
     headers = {'content-type': 'application/atom+xml'}
-    response = client.post("/youtube/hook", data=xml_data, headers=headers)
+    response = client.get("/youtube/hook", data=xml_data, headers=headers)
     assert response.status_code == 200
     assert response.json() == {"message": "Received"}

@@ -69,10 +69,12 @@ async def twitter_oauth(oauth_token: str, oauth_verifier: str):
 # async def update_template():
 #     return Response(content="<form method=\"post\"><input type=\"text\" name=\"template\" placeholder=\"Template\"><input type=\"submit\" value=\"Submit\"></form>", media_type='text/html')
 @app.get("/youtube/hook")
-async def youtube_hook(request: Request, hub_challenge: str = Query(..., alias="hub.challenge"), hub_mode: str = Query(..., alias="hub.mode")):
+async def youtube_hook(hub_challenge: str = Query(..., alias="hub.challenge"), hub_mode: str = Query(..., alias="hub.mode")):
     if hub_mode == 'subscribe' and hub_challenge:
         return Response(content=hub_challenge, media_type='text/plain')
 
+@app.post("/youtube/hook")
+async def youtube_hook(request: Request):
     body = await request.body()
     try:
         root = ET.fromstring(body)
