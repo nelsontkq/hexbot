@@ -1,7 +1,6 @@
-import select
 from typing import Optional
 
-from sqlmodel import Field, SQLModel, Session, create_engine
+from sqlmodel import Field, SQLModel, Session, create_engine, select
 
 from app.config import settings
 

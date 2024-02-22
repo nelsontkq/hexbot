@@ -1,7 +1,15 @@
 from fastapi.testclient import TestClient
 from app.main import app  # Import your FastAPI app
+from unittest.mock import patch
 
 client = TestClient(app)
+
+def test_twitter_oauth_flow():
+    with patch('tweepy.OAuth1UserHandler.get_authorization_url') as mock_auth_url:
+        mock_auth_url.return_value = "https://mocked.url"
+        response = client.get("/twitter")
+        assert response.status_code == 200
+        assert "https://mocked.url" in response.json()["url"]
 
 def test_youtube_subscription_verification():
     # Simulating YouTube's subscription verification request
