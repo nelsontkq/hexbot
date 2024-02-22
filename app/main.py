@@ -68,7 +68,7 @@ async def twitter_oauth(oauth_token: str, oauth_verifier: str):
 # @app.get("/update_template")
 # async def update_template():
 #     return Response(content="<form method=\"post\"><input type=\"text\" name=\"template\" placeholder=\"Template\"><input type=\"submit\" value=\"Submit\"></form>", media_type='text/html')
-@app.post("/youtube/hook")
+@app.get("/youtube/hook")
 async def youtube_hook(request: Request):
     # Extract the content type of the request
     content_type = request.headers.get('content-type')
@@ -79,7 +79,7 @@ async def youtube_hook(request: Request):
         form_data = await request.form()
         hub_mode = form_data.get('hub.mode')
         hub_challenge = form_data.get('hub.challenge')
-
+        print(form_data)
         if hub_mode == 'subscribe' and hub_challenge:
             return Response(content=hub_challenge, media_type='text/plain')
 
