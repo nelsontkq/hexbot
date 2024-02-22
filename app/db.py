@@ -1,3 +1,4 @@
+from ast import Tuple
 from typing import Optional
 
 from sqlmodel import Field, SQLModel, Session, create_engine, select
@@ -12,6 +13,10 @@ class TwitterUser(SQLModel, table=True):
     access_token_secret: Optional[str]
     # tweet_template: Optional[str]
 # Properties to receive via API on creation
+
+class YoutubeUpload(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    link: str
 
 engine = create_engine(settings.db_connection_string)
 
@@ -47,3 +52,18 @@ def get_user(user_name: str) -> Optional[TwitterUser]:
             select(TwitterUser).where(TwitterUser.user == user_name)
         ).first()
         return user
+    
+def get_create_post(link: str) -> Tuple[YoutubeUpload, bool]:
+    with Session(engine) as session:
+        post = session.exec(
+            select(YoutubeUpload).where(YoutubeUpload.link == link)
+        ).first()
+        new = post is None
+
+        if new:
+            session.add(YoutubeUpload(link=link))
+            session.commit()
+            post = session.exec(
+                select(YoutubeUpload).where(YoutubeUpload.link == link)
+            ).first()
+        return post, new

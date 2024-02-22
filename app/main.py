@@ -93,7 +93,7 @@ async def youtube_hook(request: Request):
             for entry in root.findall('{http://www.w3.org/2005/Atom}entry'):
                 title = entry.find('{http://www.w3.org/2005/Atom}title').text
                 link = entry.find('{http://www.w3.org/2005/Atom}link').attrib['href']
-
+                
                 await bot.process_youtube(title, link, settings, get_user(settings.default_user))
 
         except ET.ParseError:

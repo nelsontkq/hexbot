@@ -3,7 +3,7 @@
 from app.config import Settings
 import tweepy
 
-from app.db import TwitterUser
+from app.db import TwitterUser, get_create_post
 
 
 def get_twitter_client(config: Settings, user: TwitterUser) -> tweepy.Client:
@@ -19,17 +19,19 @@ def get_twitter_client(config: Settings, user: TwitterUser) -> tweepy.Client:
 async def process_youtube(title: str, link: str, config: Settings, user: TwitterUser):
     # Initialize Twitter client
     api = get_twitter_client(config, user)
-
+    post, new_post = get_create_post(link)
+    if not new_post:
+        print("Tweet already posted.")
+        return
     # Post tweet
     try:
         api.create_tweet(text=f"""🚨 New Video 🚨
 
-Check out my latest video over on YouTube
-                         
-{link}
+Check out my latest video over on YouTube and whilst you're there, don't forget to like, comment and subscribe!
 
 Hex 👋
 
+{link}
 #mtgmkm #mtgkarlov #mtg""")
         print("Tweet posted successfully.")
     except Exception as e:
