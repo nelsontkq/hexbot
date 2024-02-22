@@ -30,14 +30,16 @@ def get_session():
 
 
 def init_db() -> None:
+    print("Creating tables")
     SQLModel.metadata.create_all(engine)
-    with Session(engine) as session:
-        user = session.exec(
-            select(TwitterUser).where(TwitterUser.user == settings.default_user)
-        ).first()
-        if not user:
-            session.add(TwitterUser(user=settings.default_user, hub_topic=settings.hub_topic))
-            session.commit()
+    session = get_session()
+    user = session.exec(
+        select(TwitterUser).where(TwitterUser.user == settings.default_user)
+    ).first()
+    if not user:
+        print("Creating default user")
+        session.add(TwitterUser(user=settings.default_user, hub_topic=settings.hub_topic))
+        session.commit()
 
 
 def create_update_user(
