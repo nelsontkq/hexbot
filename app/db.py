@@ -28,7 +28,7 @@ def init_db() -> None:
             session.commit()
 
 def update_user(user_name: str, access_token: str, access_token_secret: str) -> None:
-
+    print(f"Updating user {user_name}")
     with Session(engine) as session:
         user = session.exec(
             select(TwitterUser).where(TwitterUser.user == user_name)
@@ -36,6 +36,7 @@ def update_user(user_name: str, access_token: str, access_token_secret: str) -> 
         user.access_token = access_token
         user.access_token_secret = access_token_secret
         session.commit()
+    print(f"User {user_name} updated")
 
 def get_user(user_name: str) -> Optional[TwitterUser]:
     with Session(engine) as session:

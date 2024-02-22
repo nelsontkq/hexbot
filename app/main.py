@@ -56,7 +56,8 @@ async def twitter_oauth(oauth_token: str, oauth_verifier: str):
         # Get the access token and access token secret
         auth.access_token, auth.access_token_secret = auth.get_access_token(oauth_verifier)
         
-        update_user(settings.default_user, auth.access_token, auth.access_token_secret)        
+        update_user(settings.default_user, auth.access_token, auth.access_token_secret)
+        return "Success! You can now close this tab."
     except tweepy.TweepyException as e:
         print({"error": str(e)})
 
