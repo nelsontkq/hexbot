@@ -13,7 +13,13 @@ from app.db import get_session, get_user, init_db, create_update_user, update_le
 from app.scheduler import init_scheduler
 from app.youtube import resubscribe
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    init_scheduler()
+    yield
+
+app = FastAPI(lifespan=lifespan)
 
 origins = ["*"]
 
@@ -24,13 +30,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    init_db()
-    init_scheduler()
-    yield
 
 
 # templates = Jinja2Templates(directory="templates")
