@@ -10,6 +10,7 @@ class TwitterUser(SQLModel, table=True):
     user: str
     access_token: Optional[str]
     access_token_secret: Optional[str]
+    # tweet_template: Optional[str]
 # Properties to receive via API on creation
 
 engine = create_engine(settings.db_connection_string)

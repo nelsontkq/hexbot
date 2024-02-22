@@ -4,6 +4,7 @@ from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Depends, FastAPI, Request, Response
 from fastapi.responses import RedirectResponse
+from fastapi.templating import Jinja2Templates
 from app import bot
 from app.config import settings
 import xml.etree.ElementTree as ET
@@ -28,10 +29,11 @@ async def lifespan(app: FastAPI):
     init_db()
     yield
     
+# templates = Jinja2Templates(directory="templates")
 
 @app.get("/")
 async def root():
-    return ":)"
+    return Response(content="<h1>Youtube to Twitter</h1><p>Go to /twitter to authenticate with Twitter</p>", media_type='text/html')
 
 @app.get("/twitter")
 async def twitter():
@@ -57,10 +59,14 @@ async def twitter_oauth(oauth_token: str, oauth_verifier: str):
         auth.access_token, auth.access_token_secret = auth.get_access_token(oauth_verifier)
         
         create_update_user(settings.default_user, auth.access_token, auth.access_token_secret)
-        return "Success! You can now close this tab."
+        return Response(content="<p>User updated successfully</p>", media_type='text/html')
     except tweepy.TweepyException as e:
         print({"error": str(e)})
 
+
+# @app.get("/update_template")
+# async def update_template():
+#     return Response(content="<form method=\"post\"><input type=\"text\" name=\"template\" placeholder=\"Template\"><input type=\"submit\" value=\"Submit\"></form>", media_type='text/html')
 @app.post("/youtube/hook")
 async def youtube_hook(request: Request):
     # Extract the content type of the request

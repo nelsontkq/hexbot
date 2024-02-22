@@ -20,12 +20,17 @@ async def process_youtube(title: str, link: str, config: Settings, user: Twitter
     # Initialize Twitter client
     api = get_twitter_client(config, user)
 
-    # Create tweet content
-    tweet_content = f"Received a new video: {title} - {link}"
-
     # Post tweet
     try:
-        api.create_tweet(text=tweet_content)
+        api.create_tweet(text=f"""🚨 New Video 🚨
+
+Check out my latest video over on YouTube
+                         
+{link}
+
+Hex 👋
+
+#mtgmkm #mtgkarlov #mtg""")
         print("Tweet posted successfully.")
     except Exception as e:
         print("Error in posting tweet:", e)
