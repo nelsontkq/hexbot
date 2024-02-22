@@ -1,11 +1,9 @@
 import datetime
-from functools import lru_cache
 from discord import HTTPException
 from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Depends, FastAPI, Query, Request, Response
 from fastapi.responses import RedirectResponse
-from fastapi.templating import Jinja2Templates
 from app import bot
 from app.config import settings
 import xml.etree.ElementTree as ET
@@ -109,7 +107,8 @@ async def youtube_hook(
 
 
 @app.post("/youtube/resubscribe")
-async def youtube_resubscribe( session=Depends(get_session),
+async def youtube_resubscribe(
+    session=Depends(get_session),
 ):
     user = get_user(session, settings.default_user)
     if user:
@@ -117,6 +116,7 @@ async def youtube_resubscribe( session=Depends(get_session),
         return {"message": "Resubscribed"}
     else:
         return {"message": "User not found"}
+
 
 @app.post("/youtube/hook")
 async def youtube_hook(request: Request, session=Depends(get_session)):

@@ -1,6 +1,4 @@
-
-
-from pytest import Session
+from sqlmodel import Session
 from app.config import Settings
 import tweepy
 
