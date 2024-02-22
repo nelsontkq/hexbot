@@ -13,6 +13,7 @@ import tweepy
 
 from app.db import get_session, get_user, init_db, create_update_user, update_lease
 from app.scheduler import init_scheduler
+from app.youtube import resubscribe
 
 app = FastAPI()
 
@@ -106,6 +107,16 @@ async def youtube_hook(
         update_lease(session, settings.default_user, int(lease_seconds), hub_topic)
         return Response(content=hub_challenge, media_type="text/plain")
 
+
+@app.post("/youtube/resubscribe")
+async def youtube_resubscribe( session=Depends(get_session),
+):
+    user = get_user(session, settings.default_user)
+    if user:
+        await resubscribe(user.hub_topic)
+        return {"message": "Resubscribed"}
+    else:
+        return {"message": "User not found"}
 
 @app.post("/youtube/hook")
 async def youtube_hook(request: Request, session=Depends(get_session)):
