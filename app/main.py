@@ -34,7 +34,7 @@ async def lifespan(app: FastAPI):
 
 @app.get("/")
 async def root():
-    return Response(content="<h1>Youtube to Twitter</h1><p>Go to /twitter to authenticate with Twitter</p>", media_type='text/html')
+    return Response(content="<h1>Youtube to Twitter</h1><a href=\"/twitter\">authenticate with Twitter</a>", media_type='text/html')
 
 @app.get("/twitter")
 async def twitter():

@@ -1,5 +1,4 @@
-from ast import Tuple
-from typing import Optional
+from typing import Optional, Tuple
 
 from sqlmodel import Field, SQLModel, Session, create_engine, select
 
