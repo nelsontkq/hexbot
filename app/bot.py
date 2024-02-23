@@ -1,3 +1,4 @@
+import requests
 from sqlmodel import Session
 from app.config import Settings
 import tweepy
@@ -25,7 +26,7 @@ async def process_youtube(session: Session, title: str, link: str, config: Setti
     # Post tweet
     try:
         print("Posting tweet...")
-        api.create_tweet(text=f"""🚨 New Video 🚨
+        response = api.create_tweet(text=f"""🚨 New Video 🚨
 
 Check out my latest video over on YouTube and whilst you're there, don't forget to like, comment and subscribe!
 
@@ -33,6 +34,15 @@ Hex 👋
 
 {link}
 #mtgmkm #mtgkarlov #mtg""")
+        try:
+            if isinstance(response, requests.models.Response):
+                print(f"{response.status_code}: {response.text}")
+            elif isinstance(response, tweepy.Response):
+                print(f"{response.data} {response.errors}")
+            else:
+                print(response)
+        except Exception as e:
+            print(e)
         print("Tweet posted successfully.")
     except Exception as e:
         print("Error in posting tweet:", e)
