@@ -24,6 +24,7 @@ async def process_youtube(session: Session, title: str, link: str, config: Setti
         return
     # Post tweet
     try:
+        print("Posting tweet...")
         api.create_tweet(text=f"""🚨 New Video 🚨
 
 Check out my latest video over on YouTube and whilst you're there, don't forget to like, comment and subscribe!

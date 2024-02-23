@@ -103,6 +103,7 @@ async def youtube_hook(
         print(f"Subscribed to Youtube with lease_seconds: {lease_seconds}")
         update_lease(session, settings.default_user, int(lease_seconds), hub_topic)
         return Response(content=hub_challenge, media_type="text/plain")
+    print("Youtube mode invalid")
 
 
 @app.post("/youtube/resubscribe")
@@ -119,8 +120,9 @@ async def youtube_resubscribe(
 
 @app.post("/youtube/hook")
 async def youtube_hook(request: Request, session=Depends(get_session)):
-    body = await request.body()
+    print("Received youtube hook")
     try:
+        body = await request.body()
         root = ET.fromstring(body)
 
         for entry in root.findall("{http://www.w3.org/2005/Atom}entry"):
@@ -148,8 +150,10 @@ async def youtube_hook(request: Request, session=Depends(get_session)):
             )
 
     except ET.ParseError:
+        print("invalid xml")
         raise HTTPException(status_code=400, detail="Invalid XML format")
     except Exception as e:
+        print(e)
         raise HTTPException(status_code=500, detail=str(e))
 
     return {"message": "Received"}
