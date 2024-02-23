@@ -146,14 +146,14 @@ async def youtube_hook(request: Request, session=Depends(get_session)):
                 link,
                 published,
                 settings,
-                get_user(settings.default_user),
+                get_user(session, settings.default_user),
             )
 
     except ET.ParseError:
         print("invalid xml")
-        raise HTTPException(status_code=400, detail="Invalid XML format")
+        return Response(status_code=400, detail="Invalid XML format")
     except Exception as e:
         print(e)
-        raise HTTPException(status_code=500, detail=str(e))
+        return Response(status_code=500, detail=str(e))
 
     return {"message": "Received"}
