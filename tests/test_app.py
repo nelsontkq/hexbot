@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 from fastapi.testclient import TestClient
 from unittest.mock import MagicMock, patch
 
@@ -8,44 +9,8 @@ from app.config import settings
 from app.db import engine
 from app.main import app  # Import your FastAPI app
 
-@pytest.fixture(scope="module")
-def client():
-    SQLModel.metadata.create_all(engine)
-
-    with TestClient(app) as client:
-        yield client
-
-    # Teardown: Drop tables
-    SQLModel.metadata.drop_all(engine)
-        
-        
-
-def test_youtube_invalid_verify_token(client: TestClient):
-    # Simulating YouTube's subscription verification request
-    response = client.get("/youtube/hook", params={
-        'hub.mode': 'subscribe',
-        'hub.challenge': 'test_challenge',
-        'hub.verify_token': 'test_token',
-        'hub.lease_seconds': '864000',
-        'hub.topic': 'test_topic',
-    })
-    assert response.status_code == 403
-
-@patch('app.config.settings.youtube_verify_token', 'test_token')
-def test_youtube_valid_verify_token(client: TestClient):
-    response = client.get("/youtube/hook", params={
-        'hub.mode': 'subscribe',
-        'hub.challenge': 'test_challenge',
-        'hub.verify_token': 'test_token',
-        'hub.lease_seconds': '864000',
-        'hub.topic': 'test_topic',
-    })
-    assert response.status_code == 200
-    assert response.text == 'test_challenge'
-
-def test_youtube_notification_handling(client: TestClient):
-    # Simulating a YouTube notification
-    xml_data = """
+# Simulating a YouTube notification
+xml_data = """
     <feed xmlns:yt="http://www.youtube.com/xml/schemas/2015"
             xmlns="http://www.w3.org/2005/Atom">
     <link rel="hub" href="https://pubsubhubbub.appspot.com"/>
@@ -62,28 +27,99 @@ def test_youtube_notification_handling(client: TestClient):
         <name>Channel title</name>
         <uri>http://www.youtube.com/channel/CHANNEL_ID</uri>
         </author>
-        <published>2015-03-06T21:40:57+00:00</published>
+        <published>{published_date}+00:00</published>
         <updated>2015-03-09T19:05:24.552394234+00:00</updated>
     </entry>
     </feed>
     """
-    headers = {'content-type': 'application/atom+xml'}
-    response = client.post("/youtube/hook", content=xml_data, headers=headers)
+
+
+@pytest.fixture(scope="module")
+def client():
+    SQLModel.metadata.create_all(engine)
+
+    with TestClient(app) as client:
+        yield client
+
+    # Teardown: Drop tables
+    SQLModel.metadata.drop_all(engine)
+
+
+def test_youtube_invalid_verify_token(client: TestClient):
+    # Simulating YouTube's subscription verification request
+    response = client.get(
+        "/youtube/hook",
+        params={
+            "hub.mode": "subscribe",
+            "hub.challenge": "test_challenge",
+            "hub.verify_token": "test_token",
+            "hub.lease_seconds": "864000",
+            "hub.topic": "test_topic",
+        },
+    )
+    assert response.status_code == 403
+
+
+@patch("app.config.settings.youtube_verify_token", "test_token")
+def test_youtube_valid_verify_token(client: TestClient):
+    response = client.get(
+        "/youtube/hook",
+        params={
+            "hub.mode": "subscribe",
+            "hub.challenge": "test_challenge",
+            "hub.verify_token": "test_token",
+            "hub.lease_seconds": "864000",
+            "hub.topic": "test_topic",
+        },
+    )
+    assert response.status_code == 200
+    assert response.text == "test_challenge"
+
+
+def test_youtube_hook_ignores_old_request(client: TestClient):
+
+    headers = {"content-type": "application/atom+xml"}
+    response = client.post(
+        "/youtube/hook",
+        content=xml_data.format(
+            published_date=(
+                datetime.datetime.utcnow() - datetime.timedelta(days=1)
+            ).isoformat()
+        ),
+        headers=headers,
+    )
+    assert response.status_code == 200
+    assert response.json() == {"message": "Received"}
+
+@patch("app.main.bot.get_twitter_client")
+def test_youtube_hook_submits_new_request(get_twitter_client, client: TestClient):
+    get_twitter_client.return_value = MagicMock()
+
+    headers = {"content-type": "application/atom+xml"}
+    response = client.post(
+        "/youtube/hook",
+        content=xml_data.format(
+            published_date=(
+                datetime.datetime.utcnow() - datetime.timedelta(minutes=2)
+            ).isoformat()
+        ),
+        headers=headers,
+    )
     assert response.status_code == 200
     assert response.json() == {"message": "Received"}
 
 
-@patch('app.main.get_user')
-@patch('aiohttp.ClientSession.post')
+@patch("app.main.get_user")
+@patch("aiohttp.ClientSession.post")
 def test_youtube_resubscribe_user_found(mock_post, mock_get_user, client: TestClient):
-        # Mock the response from YouTube
+    # Mock the response from YouTube
     mock_resp = MagicMock()
     mock_resp.status = 200  # Set to the expected status code
     mock_resp.text = MagicMock(return_value=asyncio.Future())
-    mock_resp.text.return_value.set_result('Success')  # Set the expected response text
+    mock_resp.text.return_value.set_result("Success")  # Set the expected response text
     mock_post.return_value.__aenter__.return_value = mock_resp
     mock_user = MagicMock()
-    mock_user.hub_topic = 'test_topic'
+    mock_user.hub_topic = "test_topic"
     mock_get_user.return_value = mock_user
 
     # Test
@@ -92,17 +128,19 @@ def test_youtube_resubscribe_user_found(mock_post, mock_get_user, client: TestCl
     assert response.json() == {"message": "Resubscribed"}
 
 
-@patch('app.main.get_user')
-@patch('aiohttp.ClientSession.post')
-def test_youtube_resubscribe_user_not_found(mock_post, mock_get_user, client: TestClient):
-        # Mock the response from YouTube
+@patch("app.main.get_user")
+@patch("aiohttp.ClientSession.post")
+def test_youtube_resubscribe_user_not_found(
+    mock_post, mock_get_user, client: TestClient
+):
+    # Mock the response from YouTube
     mock_resp = MagicMock()
     mock_resp.status = 200  # Set to the expected status code
     mock_resp.text = MagicMock(return_value=asyncio.Future())
-    mock_resp.text.return_value.set_result('Success')  # Set the expected response text
+    mock_resp.text.return_value.set_result("Success")  # Set the expected response text
     mock_post.return_value.__aenter__.return_value = mock_resp
     mock_user = MagicMock()
-    mock_user.hub_topic = 'test_topic'
+    mock_user.hub_topic = "test_topic"
     mock_get_user.return_value = None
     response = client.post("/youtube/resubscribe")
     assert response.status_code == 200
