@@ -33,7 +33,7 @@ Check out my latest video over on YouTube and whilst you're there, don't forget 
 Hex 👋
 
 {link}
-#mtgmkm #mtgkarlov #mtg""")
+#mtgmkm #mtgkarlovmanor #karlovmanor #mtg #mtgarena""")
         try:
             if isinstance(response, requests.models.Response):
                 print(f"{response.status_code}: {response.text}")
