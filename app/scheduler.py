@@ -1,11 +1,12 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from app.db import get_users_to_resub
 from app.youtube import resubscribe
+import asyncio
 
 scheduler = BackgroundScheduler()
 
 def init_scheduler():
-    scheduler.add_job(check_subscriptions, "interval", hours=24)
+    scheduler.add_job(lambda: asyncio.run(check_subscriptions()), "interval", hours=24)
     scheduler.start()
 
 
