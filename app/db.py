@@ -21,7 +21,7 @@ class YoutubeUpload(SQLModel, table=True):
     link: str
 
 
-engine = create_engine(settings.db_connection_string)
+engine = create_engine(settings.db_connection_string, pool_pre_ping=True)
 
 
 def get_session():
