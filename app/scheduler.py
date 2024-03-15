@@ -1,5 +1,5 @@
 from apscheduler.schedulers.background import BackgroundScheduler
-from app.db import get_users_to_resub
+from app.db import get_users_to_resub, get_session
 from app.youtube import resubscribe
 import asyncio
 
@@ -11,7 +11,7 @@ def init_scheduler():
 
 
 async def check_subscriptions():
-    resub_jobs = get_users_to_resub()
+    resub_jobs = get_users_to_resub(get_session())
 
     for user in resub_jobs:
         try:
