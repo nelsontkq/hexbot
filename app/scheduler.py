@@ -11,10 +11,11 @@ def init_scheduler():
 
 
 async def check_subscriptions():
-    resub_jobs = get_users_to_resub(get_session())
+    with get_session() as session:
+        resub_jobs = get_users_to_resub(session)
 
-    for user in resub_jobs:
-        try:
-            await resubscribe(user.hub_topic)
-        except Exception as e:
-            print(f"Error resubscribing user {user.user}: {e}")
+        for user in resub_jobs:
+            try:
+                await resubscribe(user.hub_topic)
+            except Exception as e:
+                print(f"Error resubscribing user {user.user}: {e}")
