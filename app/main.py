@@ -11,7 +11,7 @@ import tweepy
 
 from app.db import get_session, get_user, init_db, create_update_user, update_lease
 from app.scheduler import init_scheduler
-from app.youtube import resubscribe
+from app.youtube import resubscribe, unsubscribe
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -113,6 +113,17 @@ async def youtube_resubscribe(
     user = get_user(session, settings.default_user)
     if user:
         await resubscribe(user.hub_topic)
+        return {"message": "Resubscribed"}
+    else:
+        return {"message": "User not found"}
+
+@app.post("/youtube/unsubscribe")
+async def youtube_resubscribe(
+    session=Depends(get_session),
+):
+    user = get_user(session, settings.default_user)
+    if user:
+        await unsubscribe(user.hub_topic)
         return {"message": "Resubscribed"}
     else:
         return {"message": "User not found"}
