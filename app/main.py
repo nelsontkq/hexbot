@@ -124,7 +124,7 @@ async def youtube_resubscribe(
     user = get_user(session, settings.default_user)
     if user:
         await unsubscribe(user.hub_topic)
-        return {"message": "Resubscribed"}
+        return {"message": "Unsubscribed for 24h"}
     else:
         return {"message": "User not found"}
 
