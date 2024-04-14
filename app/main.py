@@ -202,6 +202,6 @@ async def set_posts_by_user(
         return Response(
             status_code=400, content="post_time required for scheduled posts"
         )
-    return create_update_on_youtube_post(
-        session, post.text, post.user_name, post.post_trigger, post.post_time
-    ).model_dump()
+    if post.post_trigger != PostScheduleTime.on_new_video:
+        return Response(status_code=400, content="Not implemented")
+    return create_update_on_youtube_post(session, post.text, post.user_name)

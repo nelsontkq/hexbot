@@ -90,14 +90,12 @@ def get_user(session: Session, user_name: str) -> Optional[TwitterUser]:
 def create_update_on_youtube_post(
     session: Session,
     text: str,
-    user_name: str,
-    post_trigger: PostScheduleTime,
-    post_time: Optional[datetime.datetime] = None,
+    user_name: str
 ):
     print(f"Updating user {user_name}")
     post = session.exec(
         select(PostText).where(
-            PostText.user == user_name and PostText.post_trigger == post_trigger
+            PostText.user == user_name and PostText.post_trigger == PostScheduleTime.on_new_video
         )
     ).first()
     if not post:
@@ -105,18 +103,17 @@ def create_update_on_youtube_post(
             PostText(
                 text=text,
                 user=user_name,
-                post_trigger=post_trigger,
-                post_time=post_time,
+                post_trigger=PostScheduleTime.on_new_video,
+                post_time=None,
             )
         )
     else:
         post.text = text
-        post.post_time = post_time
     session.commit()
     print(f"User {user_name} updated")
     return session.exec(
         select(PostText).where(
-            PostText.user == user_name and PostText.post_trigger == post_trigger
+            PostText.user == user_name and PostText.post_trigger == PostScheduleTime.on_new_video
         )
     ).first()
 
