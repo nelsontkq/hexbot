@@ -1,9 +1,9 @@
 import requests
 from sqlmodel import Session
-from app.config import Settings
+from app.config import Settings, settings
 import tweepy
 
-from app.db import TwitterUser, get_create_post
+from app.db import TwitterUser, get_create_post, get_on_youtube_post
 
 
 def get_twitter_client(config: Settings, user: TwitterUser) -> tweepy.Client:
@@ -19,21 +19,17 @@ def get_twitter_client(config: Settings, user: TwitterUser) -> tweepy.Client:
 async def process_youtube(session: Session, title: str, link: str, config: Settings, user: TwitterUser):
     # Initialize Twitter client
     api = get_twitter_client(config, user)
-    post, new_post = get_create_post(session, link)
-    if not new_post:
+    _, is_newly_created = get_create_post(session, link)
+    if not is_newly_created:
         print("Tweet already posted.")
         return
-    # Post tweet
+    post_text = get_on_youtube_post(session, title, link, settings.default_user)
+    if not post_text:
+        print("No post text saved.")
+        return
     try:
-        print("Posting tweet...")
-        response = api.create_tweet(text=f"""🚨 New Video 🚨
-
-Check out my latest video over on YouTube and whilst you're there, don't forget to like, comment and subscribe!
-
-Hex 👋
-
-{link}
-#mtgmkm #mtgkarlovmanor #karlovmanor #mtg #mtgarena""")
+        print(f"Posting youtube tweet...")
+        response = api.create_tweet(text=post_text)
         try:
             if isinstance(response, requests.models.Response):
                 print(f"{response.status_code}: {response.text}")
@@ -43,6 +39,5 @@ Hex 👋
                 print(response)
         except Exception as e:
             print(e)
-        print("Tweet posted successfully.")
     except Exception as e:
         print("Error in posting tweet:", e)

@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     twitter_api_key:str
     youtube_verify_token: str
     hub_topic: str
+    secret_key: str
     
     model_config = SettingsConfigDict(env_file=".env")
 
