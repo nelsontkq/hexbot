@@ -57,6 +57,23 @@ def init_db() -> None:
             )
             session.commit()
 
+        default_post = session.exec(
+            select(PostText).where(
+                PostText.user == settings.default_user
+                and PostText.post_trigger == PostScheduleTime.on_new_video
+            )
+        ).first()
+        if not default_post:
+            print("Creating default post")
+            session.add(
+                PostText(
+                    text="🚨 New Video 🚨\n\nCheck out my latest video over on YouTube and whilst you're there, don't forget to like, comment and subscribe!\n\nHex 👋\n\n{link}\n#mtgmkm #mtgkarlovmanor #karlovmanor #mtg #mtgarena",
+                    user=settings.default_user,
+                    post_trigger=PostScheduleTime.on_new_video,
+                )
+            )
+            session.commit()
+
 
 def create_update_user(
     session: Session, user_name: str, access_token: str, access_token_secret: str
@@ -87,15 +104,12 @@ def get_user(session: Session, user_name: str) -> Optional[TwitterUser]:
     return user
 
 
-def create_update_on_youtube_post(
-    session: Session,
-    text: str,
-    user_name: str
-):
+def create_update_on_youtube_post(session: Session, text: str, user_name: str):
     print(f"Updating user {user_name}")
     post = session.exec(
         select(PostText).where(
-            PostText.user == user_name and PostText.post_trigger == PostScheduleTime.on_new_video
+            PostText.user == user_name
+            and PostText.post_trigger == PostScheduleTime.on_new_video
         )
     ).first()
     if not post:
@@ -113,7 +127,8 @@ def create_update_on_youtube_post(
     print(f"User {user_name} updated")
     return session.exec(
         select(PostText).where(
-            PostText.user == user_name and PostText.post_trigger == PostScheduleTime.on_new_video
+            PostText.user == user_name
+            and PostText.post_trigger == PostScheduleTime.on_new_video
         )
     ).first()
 
