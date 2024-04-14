@@ -9,15 +9,27 @@ from app.config import settings
 import xml.etree.ElementTree as ET
 import tweepy
 
-from app.db import get_session, get_user, init_db, create_update_user, update_lease
+from app.db import (
+    PostScheduleTime,
+    create_update_on_youtube_post,
+    get_on_youtube_post,
+    get_session,
+    get_user,
+    init_db,
+    create_update_user,
+    update_lease,
+)
+from app.models import Post
 from app.scheduler import init_scheduler
 from app.youtube import resubscribe, unsubscribe
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
     init_scheduler()
     yield
+
 
 app = FastAPI(lifespan=lifespan)
 
@@ -117,6 +129,7 @@ async def youtube_resubscribe(
     else:
         return {"message": "User not found"}
 
+
 @app.post("/youtube/unsubscribe")
 async def youtube_resubscribe(
     session=Depends(get_session),
@@ -142,11 +155,9 @@ async def youtube_hook(request: Request, session=Depends(get_session)):
             link = entry.find("{http://www.w3.org/2005/Atom}link").attrib["href"]
 
             # if published greater than 12 hours ago, ignore
-            published_iso_date = datetime.datetime.fromisoformat(published).replace(
-                tzinfo=None
-            )
+            published_iso_date = datetime.datetime.fromisoformat(published)
             if (
-                datetime.datetime.utcnow() - published_iso_date
+                datetime.datetime.now(datetime.UTC) - published_iso_date
             ).total_seconds() > 43200:
                 print("Ignoring video published more than 12 hours ago")
                 continue
@@ -167,3 +178,30 @@ async def youtube_hook(request: Request, session=Depends(get_session)):
         return Response(status_code=500, content=str(e))
 
     return {"message": "Received"}
+
+
+@app.get("/posts/{user_name}")
+async def get_posts_by_user(
+    user_name: str,
+    title: str = "YOUTUBE_TITLE_HERE",
+    link="YOUTUBE_LINK_HERE",
+    session=Depends(get_session),
+):
+    text = get_on_youtube_post(session, title, link, user_name)
+    if text:
+        return text
+    return Response(status_code=404, content="No post found")
+
+
+@app.post("/posts")
+async def set_posts_by_user(
+    post: Post,
+    session=Depends(get_session),
+):
+    if post.post_trigger == PostScheduleTime.on_scheduled and post.post_time is None:
+        return Response(
+            status_code=400, content="post_time required for scheduled posts"
+        )
+    if post.post_trigger != PostScheduleTime.on_new_video:
+        return Response(status_code=400, content="Not implemented")
+    return create_update_on_youtube_post(session, post.text, post.user_name)

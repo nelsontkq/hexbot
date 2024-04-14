@@ -6,8 +6,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 from sqlmodel import SQLModel
 from app.config import settings
-from app.db import engine
-from app.main import app  # Import your FastAPI app
+from app.db import PostScheduleTime, engine
+from app.main import app
+from app.models import Post  # Import your FastAPI app
 
 # Simulating a YouTube notification
 xml_data = """
@@ -91,6 +92,7 @@ def test_youtube_hook_ignores_old_request(client: TestClient):
     assert response.status_code == 200
     assert response.json() == {"message": "Received"}
 
+
 @patch("app.main.bot.get_twitter_client")
 def test_youtube_hook_submits_new_request(get_twitter_client, client: TestClient):
     get_twitter_client.return_value = MagicMock()
@@ -145,3 +147,65 @@ def test_youtube_resubscribe_user_not_found(
     response = client.post("/youtube/resubscribe")
     assert response.status_code == 200
     assert response.json() == {"message": "User not found"}
+
+
+@patch("app.main.get_on_youtube_post")
+def test_get_posts_by_user(mock_get_on_youtube_post, client: TestClient):
+    mock_get_on_youtube_post.return_value = "Test post text"
+
+    response = client.get(f"/posts/{settings.default_user}")
+    assert response.status_code == 200
+    assert response.json() == "Test post text"
+
+
+@patch("app.main.create_update_on_youtube_post")
+def test_set_posts_by_user(mock_create_update_on_youtube_post, client: TestClient):
+    post_data = {
+        "text": "Test post text",
+        "user_name": "LOCALUSER",
+        "post_trigger": PostScheduleTime.on_new_video,
+        "post_time": None,
+    }
+
+    mock_create_update_on_youtube_post.return_value = Post(**post_data)
+
+    response = client.post("/posts", json=post_data)
+    assert response.status_code == 200
+    assert response.json() == post_data
+
+
+def test_create_and_update_post(client: TestClient):
+    # Test creating a new post
+    post_data = {
+        "text": "Test post text",
+        "user_name": "testuser",
+        "post_trigger": PostScheduleTime.on_new_video,
+        "post_time": None,
+    }
+    response = client.post("/posts", json=post_data)
+    assert response.status_code == 200
+    new_post_data = response.json()
+    assert new_post_data['text'] == "Test post text"
+    assert new_post_data['user'] == "testuser"
+
+    response = client.get("/posts/testuser")
+    assert response.status_code == 200
+    assert response.json() == "Test post text"
+
+    # Test updating an existing post
+    updated_post_data = {
+        "text": "Updated test post text",
+        "user_name": "testuser",
+        "post_trigger": PostScheduleTime.on_new_video,
+        "post_time": None,
+    }
+
+    response = client.post("/posts", json=updated_post_data)
+    new_post_data = response.json()
+    assert response.status_code == 200
+    assert new_post_data['text'] == "Updated test post text"
+    assert new_post_data['user'] == "testuser"
+
+    response = client.get("/posts/testuser")
+    assert response.status_code == 200
+    assert response.json() == "Updated test post text"

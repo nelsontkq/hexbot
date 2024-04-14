@@ -14,6 +14,13 @@
                 "--reload"
             ],
             "jinja": true
+        },
+        {
+            "name": "Python Debug pytest",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            
         }
     ]
 }
