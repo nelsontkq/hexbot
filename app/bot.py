@@ -23,13 +23,13 @@ async def process_youtube(session: Session, title: str, link: str, config: Setti
     if not is_newly_created:
         print("Tweet already posted.")
         return
-    post_text = get_on_youtube_post(session, title, link, settings.default_user)
+    post_text = get_on_youtube_post(session, settings.default_user)
     if not post_text:
         print("No post text saved.")
         return
     try:
         print(f"Posting youtube tweet...")
-        response = api.create_tweet(text=post_text)
+        response = api.create_tweet(text=post_text.format(title=title, link=link))
         try:
             if isinstance(response, requests.models.Response):
                 print(f"{response.status_code}: {response.text}")

@@ -180,15 +180,17 @@ async def youtube_hook(request: Request, session=Depends(get_session)):
     return {"message": "Received"}
 
 
-@app.get("/posts/{user_name}")
+@app.get("/posts/{user_email}")
 async def get_posts_by_user(
-    user_name: str,
-    title: str = "YOUTUBE_TITLE_HERE",
-    link="YOUTUBE_LINK_HERE",
+    user_email: str,
+    title: str = None,
+    link=None,
     session=Depends(get_session),
 ):
-    text = get_on_youtube_post(session, title, link, user_name)
+    text = get_on_youtube_post(session, user_email)
     if text:
+        if title:
+            text = text.format(title=title, link=link)
         return text
     return Response(status_code=404, content="No post found")
 

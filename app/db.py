@@ -133,9 +133,7 @@ def create_update_on_youtube_post(session: Session, text: str, user_name: str):
     ).first()
 
 
-def get_on_youtube_post(
-    session: Session, title: str, link: str, user_name: str
-) -> Optional[str]:
+def get_on_youtube_post(session: Session, user_name: str) -> Optional[str]:
     post = session.exec(
         select(PostText).where(
             PostText.user == user_name,
@@ -144,7 +142,7 @@ def get_on_youtube_post(
     ).first()
     if not post:
         return None
-    return post.text.format(title=title, link=link)
+    return post.text
 
 
 def get_create_post(session: Session, link: str) -> Tuple[YoutubeUpload, bool]:
